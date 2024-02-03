@@ -1,149 +1,153 @@
-#include "private_hash.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+
 #include "hash.h"
 
-/*создание элемента хеш-таблицы*/
-static h_item_t *create_item_hash(const char *str) {
-    /*выделение памяти для элемента*/
-    h_item_t *ret_val = (h_item_t *)malloc(sizeof(h_item_t));
-    if (ret_val == NULL) {
-        fprintf(stderr, "Ошибка выделения памяти для элемента хеш-таблицы\n");
-        return ret_val;
-    }
-    /*выделение памяти для строки*/
-    char *tmp = (char *)malloc(sizeof(char) * (strlen(str) + 1));
-    if (tmp == NULL) {
-        free(ret_val);
-        fprintf(stderr, "Ошибка выделения памяти для строки\n");
-        return ret_val = NULL;
-    }
-    /*инициализация элемента*/
-    ret_val->count = 1;
-    strcpy(tmp, str);
-    ret_val->word = tmp;
-    return ret_val;
-}
+#define SIZE_BUF    30
+#define ASCII_SIZE  128
 
-/*рехеширование*/
-static hash_t re_hash(hash_t old_htab) {
-    hash_t new_htab;
-    size_t addr_item;
+/* операция:    чтение одного слова из файла
+ * предусловия: fp - файл-источник
+ *              str_buf - буфер для строки
+ * постусловия: возвращает количество байтов в строке*/
+static size_t read_word_utf8(char *str_buf, FILE *fp);
 
-    /*проверка корректности индекса массива размеров таблицы*/
-    if (i_hash + 1 >= sizeof(h_sizes) / (sizeof(size_t)))
-        return NULL;
-    /*размер новой таблицы*/
-    i_hash++;
-    /*проверка на ошибку создания новой таблицы*/
-    if ((new_htab = create_hash()) == NULL) {
-        i_hash--;
-        return NULL;
+/* операция:    чтение символа (utf-8) из файла
+ * предусловия: fp - файл-источник
+ *              symb_buf - буфер для чтения из файла
+ * постусловия: записывает в буфер прочитанный символ
+ *              возвращает ширину символа в байтах
+ *              или 0 при ошибке*/
+static size_t read_symbol_utf8(uint8_t *symb_buf, FILE *fp);
+
+/* операция:    распознание символа как буквы
+ * предусловия: symb - строка символа
+ *              width - ширина символа в байтах
+ * постусловия: возвращает истину, если символ - буква
+ *              (латинница или кириллица)
+ *              иначе - ложь*/
+static bool is_alpha_utf8(const uint8_t *symb, const size_t width);
+
+int main(int argc, char **argv) {
+    hash_t htab;
+    FILE *fp;
+    char str_buf[SIZE_BUF];
+
+    /*проверка числа аргументов*/
+    if (argc != 2) {
+        fprintf(stderr, "Использование: %s файл\n", argv[0]);
+        exit(EXIT_SUCCESS);
     }
-    /*перенос из старой таблицы в новую*/
-    for (addr_item = 0; addr_item < h_sizes[i_hash - 1]; addr_item++) {
-        /*к следующей итерации, если элемент отсутствует*/
-        if (old_htab[addr_item] == NULL)
-            continue;
-        /*вставка элемента в новую таблицу*/
-        if (add_hash(old_htab[addr_item]->word, new_htab) == NULL) {
-            i_hash--;
-            return NULL;
+    /*открытие файла для чтения*/
+    if ((fp = fopen(argv[1], "rb")) == NULL) {
+        fprintf(stderr, "Ошибка открытия %s\n", argv[1]);
+        exit(EXIT_FAILURE);
+    }
+    /*создание хеш-таблицы*/
+    if ((htab = create_hash()) == NULL) {
+        fprintf(stderr, "Ошибка создания хеш-таблицы\n");
+        exit(EXIT_FAILURE);
+    }
+    /*заполнение хеш-таблицы*/
+    while (read_word_utf8(str_buf, fp) != 0) {
+        if ((htab = add_hash(str_buf, htab)) == NULL) {
+            fclose(fp);
+            fprintf(stderr, "Ошибка заполнения хеш-таблицы\n");
+            exit(EXIT_FAILURE);
         }
     }
-    printf("рехеширование %ld\n", i_hash);
-    /*удаление старой таблицы*/
-    i_hash--;
-    del_hash(old_htab);
-    i_hash++;
-    /*возвращение адреса новой таблицы*/
-    return new_htab;
-}
+    /*вывод содержимого хеш-таблицы*/
+    printf("Всего %ld слов(а)\n", print_hash(htab));
 
-/*хеш-функция*/
-static uint32_t hashly(const char *str) {
-    uint32_t hash = 0;
-
-    for(; *str != '\0'; str++)
-        hash = (hash * 1664525) + (uint8_t)(*str) + 1013904223;
-    return hash;
-}
-
-/*реализация функций публичного интерфейса*/
-
-/*создание и инициализация хеш-таблицы*/
-hash_t create_hash(void) {
-    hash_t ret_val;
-
-    /*выделение памяти для массива указателей типа hash_t*/
-    if ((ret_val = (hash_t)malloc(sizeof(h_item_t *) * h_sizes[i_hash])) == NULL) {
-        fprintf(stderr, "Ошибка выделения памяти для хеш-таблицы\n");
-        return ret_val;
-    }
-    /*инициализация элементов массива*/
-    for (size_t index = 0; index < h_sizes[i_hash]; index++)
-        ret_val[index] = NULL;
-    return ret_val;
-}
-
-/*добавление элемента в хеш-таблицу*/
-hash_t add_hash(const char *str, hash_t htab) {
-    size_t addr_item;
-    hash_t new_htab;
-
-    /*поиск свободного адреса или совпадения*/
-    for (int count_probe = 0; count_probe <= h_sizes[i_hash]; count_probe++) {
-        /*линейное пробирование*/
-        addr_item = (hashly(str) + count_probe) % h_sizes[i_hash];
-        /*если найдена свободная ячейка таблицы*/
-        if (htab[addr_item] == NULL) {
-            /*добавление в неё элемента*/
-            if ((htab[addr_item] = create_item_hash(str)) == NULL) {
-                fprintf(stderr, "Ошибка добавления элемента в таблицу\n");
-                del_hash(htab);
-                return NULL;
-            }
-            return htab;
-        }
-        /*если найдено совпадение*/
-        if (strcmp(htab[addr_item]->word, str) == 0) {
-            htab[addr_item]->count++;
-            return htab;
-        }
-        /*если 3 коллизии подряд, то попытка рехеширования*/
-        if (count_probe == 3) {
-            /*при ошибке рехеширования продолжается линейное пробирование*/
-            if ((new_htab = re_hash(htab)) == NULL) {
-                continue;
-            }
-            /*иначе, элемент добавляется в новую таблицу*/
-            count_probe = -1;
-            htab = new_htab;
-        }
-    }
-    /*если нет места в таблице, а рехеширование невозможно*/
-    fprintf(stderr, "Таблица переполнена\n");
+    fclose(fp);
     del_hash(htab);
-    return NULL;
+    return 0;
 }
 
-/*вывод элементов хэш-таблицы*/
-size_t print_hash(hash_t htab) {
-    size_t ret_val = 0;
+/*чтение слова из файла*/
+static size_t read_word_utf8(char *str_buf, FILE *fp) {
+    uint8_t symb_buf[5];
+    size_t width_str = 0;
+    size_t width;
 
-    for (size_t index = 0; index < h_sizes[i_hash]; index++) {
-        if (htab[index] != NULL) {
-            printf("    %s - %ld\n", htab[index]->word, htab[index]->count);
-            ret_val++;
+    /*поиск начала слова*/
+    while (width = read_symbol_utf8(symb_buf, fp)) {
+        if (is_alpha_utf8(symb_buf, width)) {
+            break;
         }
     }
-    return ret_val;
+    /*проверка на конец файла*/
+    if (!width)
+        return 0;
+
+    str_buf[0] = '\0';
+
+    /*чтение до первого небуквенного символа*/
+    do {
+        strcat(str_buf, symb_buf);
+        width_str += width;
+        if (!(width = read_symbol_utf8(symb_buf, fp)))
+            break;
+        if (!is_alpha_utf8(symb_buf, width))
+            break;
+    } while (width_str < (SIZE_BUF - 1));
+
+    return width_str;
 }
 
-/*удаление хеш-таблицы*/
-void del_hash(hash_t htab) {
-    for (size_t index = 0; index < h_sizes[i_hash]; index++)
-        if (htab[index] != NULL) {
-            free(htab[index]->word);    /*освобождение памяти строки*/
-            free(htab[index]);          /*освобождение памяти элемента*/
+/*чтение символа utf-8 из файла*/
+static size_t read_symbol_utf8(uint8_t *symb_buf, FILE *fp) {
+    size_t width = 1;
+    uint8_t byte_buf;
+
+    if (!fread(&byte_buf, sizeof(uint8_t), 1, fp))
+        return 0;
+    /*если символ однобайтный*/
+    if (byte_buf < ASCII_SIZE) {
+        symb_buf[0] = byte_buf;
+        symb_buf[1] = '\0';
+        return width;
+    /*иначе, определение количества байтов символа*/
+    } else {
+        symb_buf[0] = byte_buf;
+        /*подсчёт байтов*/
+        for (uint8_t bit = 0x40; (byte_buf & bit) || (width == 5); bit /= 2)
+            width++;
+        /*проверка на ошибку чтения символа*/
+        if (width == 5)
+            return 0;
+        /*чтение остальных байтов*/
+        for (size_t index = 1; index < width; index++) {
+            if (!fread(&byte_buf, sizeof(uint8_t), 1, fp))
+                return 0;
+            symb_buf[index] = byte_buf;
         }
-    free(htab);         /*и самой таблицы*/
+        symb_buf[width] = '\0';
+    }
+    return width;
+}
+
+/*распознание символа как буквы*/
+static bool is_alpha_utf8(const uint8_t *symb, const size_t width) {
+    uint16_t symb_tmp;
+
+    /*если символ однобайтный (латинница)*/
+    if (width == 1) {
+        if (((symb[0] >= 0x41) && (symb[0] <= 0x5a))
+                || ((symb[0] >= 0x61) && (symb[0] <= 0x7a)))
+            return true;
+    /*если двухбайтный (кириллица)*/
+    } else if (width == 2) {
+        symb_tmp = symb[0];
+        symb_tmp <<= 8;
+        symb_tmp |= symb[1];
+        if (symb_tmp >= 0xd090 && symb_tmp <= 0xd18f)
+            return true;
+    } else {
+        return false;
+    }
+    return false;
 }
