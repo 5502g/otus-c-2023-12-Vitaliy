@@ -90,7 +90,7 @@ hash_t add_hash(const char *str, hash_t htab) {
     hash_t new_htab;
 
     /*поиск свободного адреса или совпадения*/
-    for (int count_probe = 0; count_probe <= h_sizes[i_hash]; count_probe++) {
+    for (uint32_t count_probe = 0; count_probe <= h_sizes[i_hash]; count_probe++) {
         /*линейное пробирование*/
         addr_item = (hashly(str) + count_probe) % h_sizes[i_hash];
         /*если найдена свободная ячейка таблицы*/

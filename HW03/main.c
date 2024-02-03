@@ -74,7 +74,7 @@ static size_t read_word_utf8(char *str_buf, FILE *fp) {
     size_t width;
 
     /*поиск начала слова*/
-    while (width = read_symbol_utf8(symb_buf, fp)) {
+    while ((width = read_symbol_utf8(symb_buf, fp))) {
         if (is_alpha_utf8(symb_buf, width)) {
             break;
         }
@@ -87,7 +87,7 @@ static size_t read_word_utf8(char *str_buf, FILE *fp) {
 
     /*чтение до первого небуквенного символа*/
     do {
-        strcat(str_buf, symb_buf);
+        strcat(str_buf, (char *)symb_buf);
         width_str += width;
         if (!(width = read_symbol_utf8(symb_buf, fp)))
             break;
