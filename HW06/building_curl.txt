@@ -1,0 +1,65 @@
+///////////////
+//сборка curl//
+///////////////
+
+$ autoreconf -fi
+$ ./configure --disable-ftp --disable-file --disable-gopher --disable-dict --disable-imap --disable-ldap --disable-mqtt --disable-pop3 --disable-rtmp --disable-rtsp --disable-scp --disable-sftp --disable-smb --disable-smtp --disable-tftp --with-openssl
+  ...
+  ...
+  Host setup:       x86_64-pc-linux-gnu
+  Install prefix:   /usr/local
+  Compiler:         gcc
+   CFLAGS:          -Werror-implicit-function-declaration -O2 -Wno-system-headers
+   CPPFLAGS:        
+   LDFLAGS:         
+   LIBS:            -lssl -lcrypto -lssl -lcrypto -lbrotlidec -lz
+
+  curl version:     8.7.0-DEV
+  SSL:              enabled (OpenSSL v3+)
+  SSH:              no      (--with-{libssh,libssh2})
+  zlib:             enabled
+  brotli:           enabled (libbrotlidec)
+  zstd:             no      (--with-zstd)
+  GSS-API:          no      (--with-gssapi)
+  GSASL:            no      (libgsasl not found)
+  TLS-SRP:          enabled
+  resolver:         POSIX threaded
+  IPv6:             enabled
+  Unix sockets:     enabled
+  IDN:              no      (--with-{libidn2,winidn})
+  Build docs:       enabled (--disable-docs)
+  Build libcurl:    Shared=yes, Static=yes
+  Built-in manual:  enabled
+  --libcurl option: enabled (--disable-libcurl-option)
+  Verbose errors:   enabled (--disable-verbose)
+  Code coverage:    disabled
+  SSPI:             no      (--enable-sspi)
+  ca cert bundle:   /etc/ssl/certs/ca-certificates.crt
+  ca cert path:     /etc/ssl/certs
+  ca fallback:      no
+  LDAP:             no      (--enable-ldap / --with-ldap-lib / --with-lber-lib)
+  LDAPS:            no      (--enable-ldaps)
+  RTSP:             no      (--enable-rtsp)
+  RTMP:             no      (--with-librtmp)
+  PSL:              no      (--with-libpsl)
+  Alt-svc:          enabled (--disable-alt-svc)
+  Headers API:      enabled (--disable-headers-api)
+  HSTS:             enabled (--disable-hsts)
+  HTTP1:            enabled (internal)
+  HTTP2:            no      (--with-nghttp2)
+  HTTP3:            no      (--with-ngtcp2 --with-nghttp3, --with-quiche, --with-openssl-quic, --with-msh3)
+  ECH:              no      (--enable-ech)
+  WebSockets:       no      (--enable-websockets)
+  Protocols:        HTTP HTTPS IPFS IPNS TELNET
+  Features:         AsynchDNS HSTS HTTPS-proxy IPv6 Largefile NTLM SSL TLS-SRP UnixSockets alt-svc brotli libz threadsafe
+$ make
+
+/////////
+//вывод//
+/////////
+
+$ ./src/curl --version
+curl 8.7.0-DEV (x86_64-pc-linux-gnu) libcurl/8.7.0-DEV OpenSSL/3.0.2 zlib/1.2.11 brotli/1.0.9
+Release-Date: [unreleased]
+Protocols: http https ipfs ipns telnet
+Features: alt-svc AsynchDNS brotli HSTS HTTPS-proxy IPv6 Largefile libz NTLM SSL threadsafe TLS-SRP UnixSockets
