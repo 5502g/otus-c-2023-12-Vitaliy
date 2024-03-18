@@ -52,6 +52,11 @@ void print_json(char* data)
         if (size_arr) {
             temp = json_object_array_get_idx(temp, 0);
             json_object_object_get_ex(temp, "value", &temp);
+            if (!strncmp(json_object_get_string(temp), "Thot Not", 8)) {
+                printf("Ошибка локации\n");
+                json_object_put(root);
+                return;
+            }
             printf("%s:\n", json_object_get_string(temp));
         }
     }
@@ -78,6 +83,7 @@ void print_json(char* data)
         json_object_object_get_ex(current_condition, "temp_C", &temp);
         printf("    температура: %sC\n", json_object_get_string(temp));
     }
+    json_object_put(root);
 }
 
 /*функция обратного вызова для get_data_wttr() - стандартный пример из библиотеки curl*/
@@ -134,8 +140,17 @@ wttr_data_t *get_data_wttr(char *str)
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)chunk);
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 
-    if ((curl_easy_perform(curl_handle)) != CURLE_OK) {
-        fprintf(stderr, "Что-то пошло не так в функции curl_easy_perform()\n");
+    CURLcode code;
+    if ((code = curl_easy_perform(curl_handle)) != CURLE_OK) {
+        switch (code) {
+            case CURLE_SEND_ERROR:      fprintf(stderr, "Не удалось отправить сетевые данные\n");
+                                        break;
+            case CURLE_RECV_ERROR:      fprintf(stderr, "Сбой при получении сетевых данных\n");
+                                        break;
+            case CURLE_COULDNT_CONNECT: fprintf(stderr, "Не удалось подключиться к серверу\n");
+                                        break;
+            default:                    fprintf(stderr, "Что-то пошло не так в функции curl_easy_perform()\n");
+        }
         free(chunk->data);
         free(chunk);
         return NULL;
