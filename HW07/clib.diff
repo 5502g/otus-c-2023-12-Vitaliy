@@ -1,0 +1,24 @@
+diff -ruN clib/src/common/clib-package.c new_clib/src/common/clib-package.c
+--- clib/src/common/clib-package.c	2024-03-23 17:31:14.837930195 +0200
++++ new_clib/src/common/clib-package.c	2024-03-23 15:15:48.472565827 +0200
+@@ -657,6 +657,7 @@
+ #ifdef HAVE_PTHREADS
+       init_curl_share();
+       _debug("GET %s", json_url);
++      http_get_free(res);
+       res = http_get_shared(json_url, clib_package_curl_share);
+ #else
+       res = http_get(json_url);
+Binary files clib/src/common/clib-package.o and new_clib/src/common/clib-package.o differ
+Binary files clib/test/package/package-dependency-new and new_clib/test/package/package-dependency-new differ
+Binary files clib/test/package/package-install and new_clib/test/package/package-install differ
+Binary files clib/test/package/package-install-dependencies and new_clib/test/package/package-install-dependencies differ
+Binary files clib/test/package/package-install-dev-dependencies and new_clib/test/package/package-install-dev-dependencies differ
+Binary files clib/test/package/package-load-from-manifest and new_clib/test/package/package-load-from-manifest differ
+Binary files clib/test/package/package-load-manifest-file and new_clib/test/package/package-load-manifest-file differ
+Binary files clib/test/package/package-new and new_clib/test/package/package-new differ
+Binary files clib/test/package/package-new-from-slug and new_clib/test/package/package-new-from-slug differ
+Binary files clib/test/package/package-parse-author and new_clib/test/package/package-parse-author differ
+Binary files clib/test/package/package-parse-name and new_clib/test/package/package-parse-name differ
+Binary files clib/test/package/package-parse-version and new_clib/test/package/package-parse-version differ
+Binary files clib/test/package/package-url and new_clib/test/package/package-url differ
